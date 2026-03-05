@@ -18,3 +18,31 @@ export interface WorkflowNodeData {
   description?: string;
   config: Record<string, unknown>;
 }
+
+export type ExecutionStatus = 'idle' | 'pending' | 'running' | 'success' | 'error' | 'skipped';
+
+export interface NodeExecutionState {
+  status: ExecutionStatus;
+  output?: Record<string, unknown>;
+  error?: string;
+  startTime?: number;
+  endTime?: number;
+}
+
+export interface ExecutionLog {
+  nodeId: string;
+  nodeName: string;
+  nodeType: string;
+  status: ExecutionStatus;
+  output?: Record<string, unknown>;
+  error?: string;
+  duration?: number;
+}
+
+export interface WorkflowExecutionState {
+  isRunning: boolean;
+  nodeStates: Record<string, NodeExecutionState>;
+  logs: ExecutionLog[];
+  startTime?: number;
+  endTime?: number;
+}

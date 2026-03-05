@@ -11,11 +11,18 @@ import {
   type Connection,
   MarkerType,
 } from '@xyflow/react';
+import type {
+  WorkflowNodeData,
+  WorkflowExecutionState,
+  ExecutionLog,
+} from '../types/workflow';
+import { executeWorkflow } from '../utils/executionEngine';
 
 interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
+  execution: WorkflowExecutionState | null;
   mobileSidebarOpen: boolean;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -24,6 +31,8 @@ interface WorkflowState {
   setSelectedNodeId: (id: string | null) => void;
   updateNodeData: (id: string, data: Record<string, unknown>) => void;
   deleteNode: (id: string) => void;
+  startExecution: () => void;
+  clearExecution: () => void;
   setMobileSidebarOpen: (open: boolean) => void;
 }
 
@@ -48,6 +57,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
   selectedNodeId: null,
+  execution: null,
   mobileSidebarOpen: false,
 
   onNodesChange: (changes) => {
@@ -93,6 +103,165 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       ),
       selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
     });
+  },
+
+  startExecution: () => {
+    const { nodes, edges, execution } = get();
+
+    // Don't start if already running
+    if (execution?.isRunning) return;
+
+    // Initialize all nodes as pending
+    const nodeStates: WorkflowExecutionState['nodeStates'] = {};
+    for (const node of nodes) {
+      nodeStates[node.id] = { status: 'pending' };
+    }
+
+    set({
+      execution: {
+        isRunning: true,
+        nodeStates,
+        logs: [],
+        startTime: Date.now(),
+      },
+    });
+
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+
+    executeWorkflow(nodes, edges, {
+      onStart: () => {},
+
+      onNodeStart: (nodeId: string) => {
+        set((state) => ({
+          execution: state.execution
+            ? {
+                ...state.execution,
+                nodeStates: {
+                  ...state.execution.nodeStates,
+                  [nodeId]: {
+                    status: 'running' as const,
+                    startTime: Date.now(),
+                  },
+                },
+              }
+            : null,
+        }));
+      },
+
+      onNodeComplete: (nodeId: string, output: Record<string, unknown>) => {
+        const node = nodeMap.get(nodeId);
+        const data = node?.data as WorkflowNodeData | undefined;
+        const startTime =
+          get().execution?.nodeStates[nodeId]?.startTime || Date.now();
+        const endTime = Date.now();
+
+        const logEntry: ExecutionLog = {
+          nodeId,
+          nodeName: data?.label || nodeId,
+          nodeType: data?.type || 'unknown',
+          status: 'success',
+          output,
+          duration: endTime - startTime,
+        };
+
+        set((state) => ({
+          execution: state.execution
+            ? {
+                ...state.execution,
+                nodeStates: {
+                  ...state.execution.nodeStates,
+                  [nodeId]: {
+                    status: 'success' as const,
+                    output,
+                    startTime,
+                    endTime,
+                  },
+                },
+                logs: [...state.execution.logs, logEntry],
+              }
+            : null,
+        }));
+      },
+
+      onNodeError: (nodeId: string, error: string) => {
+        const node = nodeMap.get(nodeId);
+        const data = node?.data as WorkflowNodeData | undefined;
+        const startTime =
+          get().execution?.nodeStates[nodeId]?.startTime || Date.now();
+        const endTime = Date.now();
+
+        const logEntry: ExecutionLog = {
+          nodeId,
+          nodeName: data?.label || nodeId,
+          nodeType: data?.type || 'unknown',
+          status: 'error',
+          error,
+          duration: endTime - startTime,
+        };
+
+        set((state) => ({
+          execution: state.execution
+            ? {
+                ...state.execution,
+                nodeStates: {
+                  ...state.execution.nodeStates,
+                  [nodeId]: {
+                    status: 'error' as const,
+                    error,
+                    startTime,
+                    endTime,
+                  },
+                },
+                logs: [...state.execution.logs, logEntry],
+              }
+            : null,
+        }));
+      },
+
+      onNodeSkipped: (nodeId: string) => {
+        const node = nodeMap.get(nodeId);
+        const data = node?.data as WorkflowNodeData | undefined;
+
+        const logEntry: ExecutionLog = {
+          nodeId,
+          nodeName: data?.label || nodeId,
+          nodeType: data?.type || 'unknown',
+          status: 'skipped',
+        };
+
+        set((state) => ({
+          execution: state.execution
+            ? {
+                ...state.execution,
+                nodeStates: {
+                  ...state.execution.nodeStates,
+                  [nodeId]: { status: 'skipped' as const },
+                },
+                logs: [...state.execution.logs, logEntry],
+              }
+            : null,
+        }));
+      },
+
+      onComplete: () => {
+        set((state) => ({
+          execution: state.execution
+            ? {
+                ...state.execution,
+                isRunning: false,
+                endTime: Date.now(),
+              }
+            : null,
+        }));
+      },
+    }).catch((error: Error) => {
+      alert(error.message);
+      set({ execution: null });
+    });
+  },
+
+  clearExecution: () => {
+    set({ execution: null });
   },
 
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),

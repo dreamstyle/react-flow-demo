@@ -15,6 +15,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { nodeRegistry } from '../utils/nodeRegistry';
 import Sidebar from './panels/Sidebar';
 import ConfigPanel from './panels/ConfigPanel';
+import ExecutionResultPanel from './panels/ExecutionResultPanel';
 import Toolbar from './panels/Toolbar';
 
 let nodeId = 1;
@@ -31,6 +32,7 @@ export default function WorkflowCanvas() {
     addNode,
     selectedNodeId,
     setSelectedNodeId,
+    execution,
     mobileSidebarOpen,
     setMobileSidebarOpen,
   } = useWorkflowStore();
@@ -127,7 +129,11 @@ export default function WorkflowCanvas() {
           <Toolbar />
         </ReactFlow>
       </div>
-      {selectedNodeId && <ConfigPanel />}
+      {execution && !execution.isRunning ? (
+        <ExecutionResultPanel />
+      ) : (
+        selectedNodeId && <ConfigPanel />
+      )}
     </div>
   );
 }
