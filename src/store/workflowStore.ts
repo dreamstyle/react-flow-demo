@@ -16,6 +16,7 @@ interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
+  mobileSidebarOpen: boolean;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -23,6 +24,7 @@ interface WorkflowState {
   setSelectedNodeId: (id: string | null) => void;
   updateNodeData: (id: string, data: Record<string, unknown>) => void;
   deleteNode: (id: string) => void;
+  setMobileSidebarOpen: (open: boolean) => void;
 }
 
 const initialNodes: Node[] = [
@@ -46,6 +48,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
   selectedNodeId: null,
+  mobileSidebarOpen: false,
 
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) });
@@ -91,4 +94,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
     });
   },
+
+  setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
 }));

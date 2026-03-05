@@ -8,6 +8,7 @@ import {
   type Node,
   ConnectionMode,
 } from '@xyflow/react';
+import { Plus, X } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes } from './nodes';
 import { useWorkflowStore } from '../store/workflowStore';
@@ -30,6 +31,8 @@ export default function WorkflowCanvas() {
     addNode,
     selectedNodeId,
     setSelectedNodeId,
+    mobileSidebarOpen,
+    setMobileSidebarOpen,
   } = useWorkflowStore();
 
   const onDragOver = useCallback((event: DragEvent) => {
@@ -78,6 +81,15 @@ export default function WorkflowCanvas() {
   return (
     <div className="workflow-layout">
       <Sidebar />
+      {mobileSidebarOpen && (
+        <div className="mobile-backdrop" onClick={() => setMobileSidebarOpen(false)} />
+      )}
+      <button
+        className="mobile-add-fab"
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+      >
+        {mobileSidebarOpen ? <X size={28} /> : <Plus size={28} />}
+      </button>
       <div className="workflow-canvas-container" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
