@@ -11,6 +11,10 @@ import {
   Globe,
   Layers,
   Trash2,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  MinusCircle,
 } from 'lucide-react';
 import { useWorkflowStore } from '../../store/workflowStore';
 import type { WorkflowNodeData } from '../../types/workflow';
@@ -39,14 +43,20 @@ function BaseNode({
   hideSource = false,
 }: BaseNodeProps) {
   const { setSelectedNodeId, deleteNode } = useWorkflowStore();
+  const nodeExecState = useWorkflowStore((s) => s.execution?.nodeStates[id]);
   const connection = useConnection();
   const Icon = iconMap[data.icon] || Play;
 
   const isTarget = connection.inProgress && connection.fromNode.id !== id;
+  const execStatus = nodeExecState?.status;
+
+  const execClassName = execStatus && execStatus !== 'idle'
+    ? `execution-${execStatus}`
+    : '';
 
   return (
     <div
-      className={`workflow-node ${selected ? 'selected' : ''}`}
+      className={`workflow-node ${selected ? 'selected' : ''} ${execClassName}`}
       onClick={() => setSelectedNodeId(id)}
       style={{ '--node-color': data.color } as React.CSSProperties}
     >
@@ -63,7 +73,21 @@ function BaseNode({
           <Icon size={16} />
         </div>
         <span className="node-title">{data.label}</span>
-        {data.type !== 'start' && (
+
+        {execStatus === 'running' && (
+          <Loader2 size={14} className="node-exec-indicator exec-running-icon" />
+        )}
+        {execStatus === 'success' && (
+          <CheckCircle2 size={14} className="node-exec-indicator exec-success-icon" />
+        )}
+        {execStatus === 'error' && (
+          <XCircle size={14} className="node-exec-indicator exec-error-icon" />
+        )}
+        {execStatus === 'skipped' && (
+          <MinusCircle size={14} className="node-exec-indicator exec-skipped-icon" />
+        )}
+
+        {data.type !== 'start' && !execStatus && (
           <button
             className="node-delete"
             onClick={(e) => {
@@ -81,6 +105,18 @@ function BaseNode({
       )}
 
       {children && <div className="node-body">{children}</div>}
+
+      {nodeExecState?.output && (
+        <div className="node-output-preview">
+          {JSON.stringify(nodeExecState.output).slice(0, 60)}...
+        </div>
+      )}
+
+      {nodeExecState?.error && (
+        <div className="node-error-preview">
+          {nodeExecState.error}
+        </div>
+      )}
 
       {!hideSource && !sourceHandles && (
         <Handle
