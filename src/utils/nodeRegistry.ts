@@ -1,0 +1,103 @@
+import type { NodeTypeConfig, NodeCategory } from '../types/workflow';
+
+export const nodeRegistry: NodeTypeConfig[] = [
+  {
+    type: 'startNode',
+    label: '開始',
+    category: 'trigger',
+    icon: 'Play',
+    color: '#2563eb',
+    description: '工作流程的起始節點',
+    defaultData: { input_variables: [] },
+  },
+  {
+    type: 'endNode',
+    label: '結束',
+    category: 'output',
+    icon: 'Square',
+    color: '#dc2626',
+    description: '工作流程的結束節點',
+    defaultData: { output_type: 'text' },
+  },
+  {
+    type: 'llmNode',
+    label: 'LLM',
+    category: 'llm',
+    icon: 'MessageSquare',
+    color: '#7c3aed',
+    description: '呼叫大型語言模型',
+    defaultData: { model: 'gpt-4', temperature: 0.7, system_prompt: '', max_tokens: 2048 },
+  },
+  {
+    type: 'knowledgeNode',
+    label: '知識庫',
+    category: 'knowledge',
+    icon: 'Database',
+    color: '#0891b2',
+    description: '從知識庫中檢索資料',
+    defaultData: { knowledge_base: '', top_k: 3, score_threshold: 0.5 },
+  },
+  {
+    type: 'codeNode',
+    label: '程式碼',
+    category: 'transform',
+    icon: 'Code',
+    color: '#ea580c',
+    description: '執行自定義程式碼',
+    defaultData: { language: 'python', code: '# Write your code here\ndef main(inputs):\n    return {"result": inputs}' },
+  },
+  {
+    type: 'ifElseNode',
+    label: '條件判斷',
+    category: 'logic',
+    icon: 'GitBranch',
+    color: '#16a34a',
+    description: 'IF/ELSE 條件分支',
+    defaultData: { conditions: [{ variable: '', operator: 'equals', value: '' }] },
+  },
+  {
+    type: 'templateNode',
+    label: '模板轉換',
+    category: 'transform',
+    icon: 'FileText',
+    color: '#ca8a04',
+    description: '使用模板轉換資料',
+    defaultData: { template: '' },
+  },
+  {
+    type: 'httpNode',
+    label: 'HTTP 請求',
+    category: 'transform',
+    icon: 'Globe',
+    color: '#0d9488',
+    description: '發送 HTTP 請求到外部 API',
+    defaultData: { method: 'GET', url: '', headers: {}, body: '' },
+  },
+  {
+    type: 'variableNode',
+    label: '變數聚合',
+    category: 'transform',
+    icon: 'Layers',
+    color: '#6366f1',
+    description: '聚合多個變數',
+    defaultData: { variables: [] },
+  },
+];
+
+export const categoryLabels: Record<NodeCategory, string> = {
+  trigger: '觸發',
+  llm: '模型',
+  knowledge: '知識',
+  logic: '邏輯',
+  transform: '轉換',
+  output: '輸出',
+};
+
+export const categoryOrder: NodeCategory[] = [
+  'trigger',
+  'llm',
+  'knowledge',
+  'logic',
+  'transform',
+  'output',
+];
