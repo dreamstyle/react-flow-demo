@@ -4,7 +4,7 @@ import { useWorkflowStore } from '../../store/workflowStore';
 
 export default function Toolbar() {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
-  const { startExecution, clearExecution, execution } = useWorkflowStore();
+  const { startExecution, clearExecution, execution, undo, redo, canUndo, canRedo } = useWorkflowStore();
   const isRunning = execution?.isRunning ?? false;
   const hasResults = execution !== null && !execution.isRunning;
 
@@ -23,10 +23,10 @@ export default function Toolbar() {
       </div>
       <div className="toolbar-divider" />
       <div className="toolbar-group">
-        <button className="toolbar-btn" title="復原">
+        <button className="toolbar-btn" title="復原" onClick={undo} disabled={!canUndo()}>
           <Undo2 size={18} />
         </button>
-        <button className="toolbar-btn" title="重做">
+        <button className="toolbar-btn" title="重做" onClick={redo} disabled={!canRedo()}>
           <Redo2 size={18} />
         </button>
       </div>
