@@ -626,3 +626,189 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ====== Mobile FAB (hidden on desktop) ====== */
+.mobile-add-fab {
+  display: none;
+}
+
+.mobile-backdrop {
+  display: none;
+}
+
+/* ====== Mobile Responsive ====== */
+@media (max-width: 767px) {
+  /* Header */
+  .app-header {
+    height: 48px;
+    padding: 0 12px;
+  }
+
+  .app-title {
+    font-size: 14px;
+  }
+
+  .header-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* Layout */
+  .workflow-layout {
+    position: relative;
+  }
+
+  /* Sidebar → bottom sheet */
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 60vh;
+    z-index: 100;
+    border-right: none;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+    margin: 8px auto;
+    flex-shrink: 0;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateY(0);
+  }
+
+  .sidebar-node {
+    padding: 12px;
+    min-height: 48px;
+    cursor: pointer;
+  }
+
+  .sidebar-node:active {
+    cursor: pointer;
+    background: #e2e8f0;
+  }
+
+  /* ConfigPanel → bottom sheet */
+  .config-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 70vh;
+    z-index: 100;
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  .config-panel::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 2px;
+    margin: 8px auto;
+  }
+
+  /* Node handles — enlarge for touch */
+  .node-handle {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .node-handle:hover,
+  .node-handle.connecting {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Delete button — always visible (no hover on touch) */
+  .workflow-node .node-delete {
+    opacity: 1;
+  }
+
+  .node-delete {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Toolbar — move to bottom-right, vertical */
+  .toolbar {
+    top: auto;
+    bottom: 16px;
+    left: auto;
+    right: 16px;
+    transform: none;
+    flex-direction: column;
+    padding: 8px;
+  }
+
+  .toolbar-btn {
+    padding: 10px;
+  }
+
+  .toolbar-divider {
+    width: 24px;
+    height: 1px;
+    margin: 4px 0;
+  }
+
+  /* Hide MiniMap & Controls on mobile */
+  .flow-minimap {
+    display: none !important;
+  }
+
+  .flow-controls {
+    display: none !important;
+  }
+
+  /* FAB button */
+  .mobile-add-fab {
+    display: flex;
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    z-index: 50;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-add-fab:active {
+    transform: scale(0.92);
+  }
+
+  /* Backdrop overlay */
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 99;
+  }
+}
