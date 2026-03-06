@@ -45,15 +45,30 @@
 
 .app-header-right {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 
 .header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.15s ease;
+}
+
+.header-btn.ghost {
+  background: transparent;
+  color: #64748b;
+  padding: 6px 12px;
+}
+
+.header-btn.ghost:hover {
+  background: #f1f5f9;
+  color: #334155;
 }
 
 .header-btn.secondary {
@@ -589,19 +604,9 @@
   background: #fef2f2 !important;
 }
 
-.reset-example-btn {
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .reset-example-btn:hover {
   color: #6366f1 !important;
   background: #f5f3ff !important;
-}
-
-.clear-canvas-btn {
-  font-size: 12px;
-  font-weight: 500;
 }
 
 .clear-canvas-btn:hover {
