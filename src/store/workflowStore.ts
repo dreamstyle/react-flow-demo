@@ -47,9 +47,20 @@ interface WorkflowState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  resetToExample: () => void;
+  clearCanvas: () => void;
 }
 
-const initialNodes: Node[] = [
+const STORAGE_KEY = 'workflow-canvas';
+
+const defaultEdgeStyle = {
+  type: 'smoothstep' as const,
+  animated: true,
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
+  style: { stroke: '#94a3b8', strokeWidth: 2 },
+};
+
+const startOnlyNodes: Node[] = [
   {
     id: 'start-1',
     type: 'startNode',
@@ -64,7 +75,138 @@ const initialNodes: Node[] = [
   },
 ];
 
-const initialEdges: Edge[] = [];
+const exampleNodes: Node[] = [
+  {
+    id: 'start-1',
+    type: 'startNode',
+    position: { x: 300, y: 50 },
+    data: {
+      label: '開始',
+      type: 'start',
+      icon: 'Play',
+      color: '#2563eb',
+      config: { input_variables: ['user_query'] },
+    },
+  },
+  {
+    id: 'knowledge-1',
+    type: 'knowledgeNode',
+    position: { x: 80, y: 200 },
+    data: {
+      label: '知識庫',
+      type: 'knowledge',
+      icon: 'Database',
+      color: '#0891b2',
+      description: '從知識庫中檢索資料',
+      config: { knowledge_base: '產品文件庫', top_k: 3, score_threshold: 0.5 },
+    },
+  },
+  {
+    id: 'template-1',
+    type: 'templateNode',
+    position: { x: 480, y: 200 },
+    data: {
+      label: '模板轉換',
+      type: 'template',
+      icon: 'FileText',
+      color: '#ca8a04',
+      description: '使用模板轉換資料',
+      config: { template: '根據以下資料回答使用者問題：\n\n{{context}}\n\n使用者問題：{{user_query}}' },
+    },
+  },
+  {
+    id: 'llm-1',
+    type: 'llmNode',
+    position: { x: 280, y: 380 },
+    data: {
+      label: 'LLM',
+      type: 'llm',
+      icon: 'MessageSquare',
+      color: '#7c3aed',
+      description: '呼叫大型語言模型',
+      config: { model: 'gpt-4', temperature: 0.7, system_prompt: '你是一個專業的客服助手', max_tokens: 2048 },
+    },
+  },
+  {
+    id: 'ifelse-1',
+    type: 'ifElseNode',
+    position: { x: 280, y: 550 },
+    data: {
+      label: '條件判斷',
+      type: 'ifElse',
+      icon: 'GitBranch',
+      color: '#16a34a',
+      description: 'IF/ELSE 條件分支',
+      config: { conditions: [{ variable: 'confidence', operator: 'gte', value: '0.8' }] },
+    },
+  },
+  {
+    id: 'end-1',
+    type: 'endNode',
+    position: { x: 120, y: 720 },
+    data: {
+      label: '結束（直接回覆）',
+      type: 'end',
+      icon: 'Square',
+      color: '#dc2626',
+      description: '工作流程的結束節點',
+      config: { output_type: 'text' },
+    },
+  },
+  {
+    id: 'http-1',
+    type: 'httpNode',
+    position: { x: 440, y: 720 },
+    data: {
+      label: 'HTTP 請求',
+      type: 'http',
+      icon: 'Globe',
+      color: '#0d9488',
+      description: '發送 HTTP 請求到外部 API',
+      config: { method: 'POST', url: 'https://api.example.com/escalate', headers: {}, body: '' },
+    },
+  },
+];
+
+const exampleEdges: Edge[] = [
+  { id: 'e-start-knowledge', source: 'start-1', target: 'knowledge-1', ...defaultEdgeStyle },
+  { id: 'e-start-template', source: 'start-1', target: 'template-1', ...defaultEdgeStyle },
+  { id: 'e-knowledge-llm', source: 'knowledge-1', target: 'llm-1', ...defaultEdgeStyle },
+  { id: 'e-template-llm', source: 'template-1', target: 'llm-1', ...defaultEdgeStyle },
+  { id: 'e-llm-ifelse', source: 'llm-1', target: 'ifelse-1', ...defaultEdgeStyle },
+  { id: 'e-ifelse-end', source: 'ifelse-1', target: 'end-1', sourceHandle: 'true', ...defaultEdgeStyle },
+  { id: 'e-ifelse-http', source: 'ifelse-1', target: 'http-1', sourceHandle: 'false', ...defaultEdgeStyle },
+];
+
+function saveToStorage(nodes: Node[], edges: Edge[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function loadFromStorage(): { nodes: Node[]; edges: Edge[] } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.nodes) && Array.isArray(data.edges)) {
+      return data;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+}
+
+function getInitialState(): { nodes: Node[]; edges: Edge[] } {
+  const saved = loadFromStorage();
+  if (saved) return saved;
+  return { nodes: exampleNodes, edges: exampleEdges };
+}
+
+const initialState = getInitialState();
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => {
   const pushHistory = () => {
@@ -75,8 +217,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   };
 
   return {
-  nodes: initialNodes,
-  edges: initialEdges,
+  nodes: initialState.nodes,
+  edges: initialState.edges,
   selectedNodeId: null,
   execution: null,
   mobileSidebarOpen: false,
@@ -337,5 +479,36 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
+
+  resetToExample: () => {
+    set({
+      nodes: exampleNodes,
+      edges: exampleEdges,
+      selectedNodeId: null,
+      execution: null,
+      past: [],
+      future: [],
+    });
+    saveToStorage(exampleNodes, exampleEdges);
+  },
+
+  clearCanvas: () => {
+    set({
+      nodes: startOnlyNodes,
+      edges: [],
+      selectedNodeId: null,
+      execution: null,
+      past: [],
+      future: [],
+    });
+    saveToStorage(startOnlyNodes, []);
+  },
 };
+});
+
+// Auto-save to localStorage on nodes/edges changes
+useWorkflowStore.subscribe((state, prevState) => {
+  if (state.nodes !== prevState.nodes || state.edges !== prevState.edges) {
+    saveToStorage(state.nodes, state.edges);
+  }
 });

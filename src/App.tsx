@@ -1,8 +1,23 @@
 import { ReactFlowProvider } from '@xyflow/react';
 import WorkflowCanvas from './components/WorkflowCanvas';
+import { useWorkflowStore } from './store/workflowStore';
 import './App.css';
 
 function App() {
+  const { resetToExample, clearCanvas } = useWorkflowStore();
+
+  const handleReset = () => {
+    if (confirm('確定要重設為範例流程嗎？目前的畫布內容將會被覆蓋。')) {
+      resetToExample();
+    }
+  };
+
+  const handleClear = () => {
+    if (confirm('確定要清空畫布嗎？將只保留開始節點。')) {
+      clearCanvas();
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -11,7 +26,8 @@ function App() {
           <h1 className="app-title">Workflow Builder</h1>
         </div>
         <div className="app-header-right">
-          <button className="header-btn secondary">儲存草稿</button>
+          <button className="header-btn secondary" onClick={handleReset} title="重設為範例流程">範例</button>
+          <button className="header-btn secondary" onClick={handleClear} title="清空畫布">清空</button>
           <button className="header-btn primary">發布</button>
         </div>
       </header>
