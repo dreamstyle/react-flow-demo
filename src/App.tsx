@@ -27,15 +27,14 @@ function App() {
           <h1 className="app-title">Workflow Builder</h1>
         </div>
         <div className="app-header-right">
-          <button className="header-btn ghost reset-example-btn" onClick={handleReset} title="重設為範例流程">
+          <button className="header-btn secondary" onClick={handleReset} title="重設為範例流程">
             <BookOpen size={15} />
             <span>範例</span>
           </button>
-          <button className="header-btn ghost clear-canvas-btn" onClick={handleClear} title="清空畫布">
+          <button className="header-btn secondary" onClick={handleClear} title="清空畫布">
             <Trash2 size={15} />
             <span>清空</span>
           </button>
-          <button className="header-btn secondary">儲存草稿</button>
           <button className="header-btn primary">發布</button>
         </div>
       </header>
