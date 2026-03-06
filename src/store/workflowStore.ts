@@ -18,12 +18,21 @@ import type {
 } from '../types/workflow';
 import { executeWorkflow } from '../utils/executionEngine';
 
+interface HistorySnapshot {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+const MAX_HISTORY = 50;
+
 interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
   selectedNodeId: string | null;
   execution: WorkflowExecutionState | null;
   mobileSidebarOpen: boolean;
+  past: HistorySnapshot[];
+  future: HistorySnapshot[];
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -34,6 +43,10 @@ interface WorkflowState {
   startExecution: () => void;
   clearExecution: () => void;
   setMobileSidebarOpen: (open: boolean) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
 }
 
 const initialNodes: Node[] = [
@@ -53,19 +66,49 @@ const initialNodes: Node[] = [
 
 const initialEdges: Edge[] = [];
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set, get) => {
+  const pushHistory = () => {
+    const { nodes, edges, past } = get();
+    const newPast = [...past, { nodes, edges }];
+    if (newPast.length > MAX_HISTORY) newPast.shift();
+    return { past: newPast, future: [] };
+  };
+
+  return {
   nodes: initialNodes,
   edges: initialEdges,
   selectedNodeId: null,
   execution: null,
   mobileSidebarOpen: false,
+  past: [],
+  future: [],
 
   onNodesChange: (changes) => {
-    set({ nodes: applyNodeChanges(changes, get().nodes) });
+    const hasStructuralChange = changes.some(
+      (c) => c.type === 'remove' || c.type === 'add' || c.type === 'replace'
+    );
+    if (hasStructuralChange) {
+      set({
+        nodes: applyNodeChanges(changes, get().nodes),
+        ...pushHistory(),
+      });
+    } else {
+      set({ nodes: applyNodeChanges(changes, get().nodes) });
+    }
   },
 
   onEdgesChange: (changes) => {
-    set({ edges: applyEdgeChanges(changes, get().edges) });
+    const hasStructuralChange = changes.some(
+      (c) => c.type === 'remove' || c.type === 'add' || c.type === 'replace'
+    );
+    if (hasStructuralChange) {
+      set({
+        edges: applyEdgeChanges(changes, get().edges),
+        ...pushHistory(),
+      });
+    } else {
+      set({ edges: applyEdgeChanges(changes, get().edges) });
+    }
   },
 
   onConnect: (connection: Connection) => {
@@ -76,11 +119,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
       style: { stroke: '#94a3b8', strokeWidth: 2 },
     };
-    set({ edges: addEdge(edge, get().edges) });
+    set({ edges: addEdge(edge, get().edges), ...pushHistory() });
   },
 
   addNode: (node: Node) => {
-    set({ nodes: [...get().nodes, node] });
+    set({ nodes: [...get().nodes, node], ...pushHistory() });
   },
 
   setSelectedNodeId: (id: string | null) => {
@@ -92,6 +135,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       nodes: get().nodes.map((node) =>
         node.id === id ? { ...node, data: { ...node.data, ...data } } : node
       ),
+      ...pushHistory(),
     });
   },
 
@@ -102,8 +146,36 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         (edge) => edge.source !== id && edge.target !== id
       ),
       selectedNodeId: get().selectedNodeId === id ? null : get().selectedNodeId,
+      ...pushHistory(),
     });
   },
+
+  undo: () => {
+    const { past, nodes, edges } = get();
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    set({
+      past: past.slice(0, -1),
+      future: [{ nodes, edges }, ...get().future],
+      nodes: previous.nodes,
+      edges: previous.edges,
+    });
+  },
+
+  redo: () => {
+    const { future, nodes, edges } = get();
+    if (future.length === 0) return;
+    const next = future[0];
+    set({
+      future: future.slice(1),
+      past: [...get().past, { nodes, edges }],
+      nodes: next.nodes,
+      edges: next.edges,
+    });
+  },
+
+  canUndo: () => get().past.length > 0,
+  canRedo: () => get().future.length > 0,
 
   startExecution: () => {
     const { nodes, edges, execution } = get();
@@ -265,4 +337,5 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   },
 
   setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
-}));
+};
+});
